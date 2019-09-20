@@ -8,6 +8,8 @@ use EasySwoole\EasySwoole\AbstractInterface\Event;
 use EasySwoole\Http\Request;
 use EasySwoole\Http\Response;
 use Swoole\Table;
+use Swoole\WebSocket\Frame;
+use Swoole\WebSocket\Server;
 
 class EasySwooleEvent implements Event
 {
@@ -43,13 +45,50 @@ class EasySwooleEvent implements Event
         }
 
         /*
-         * 注册onMessage 回调
+         * 注册onMessage onHandShake 回调
          */
 
-        $register->set($register::onMessage,function (){
+        $register->set($register::onMessage,function (Server $server, Frame $frame){
 
         });
 
+        $register->set($register::onHandShake,function (\Swoole\Http\Request $request,\Swoole\Http\Response $response){
+            /*
+             * 应用鉴权
+             */
+
+            /*
+             * 一下信息为RFC规定握手流程
+             */
+            if(!isset($request->header['sec-websocket-key'])){
+                $response->end('sec-websocket-key error');
+                return ;
+            }
+            $secWebSocketKey = $request->header['sec-websocket-key'];
+            $patten = '#^[+/0-9A-Za-z]{21}[AQgw]==$#';
+            if (0 === preg_match($patten, $secWebSocketKey) || 16 !== strlen(base64_decode($secWebSocketKey))) {
+                $response->end('sec-websocket-key error');
+                return ;
+            }
+            $key = base64_encode(sha1(
+                $request->header['sec-websocket-key'] . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11',
+                true
+            ));
+            $headers = [
+                'Upgrade' => 'websocket',
+                'Connection' => 'Upgrade',
+                'Sec-WebSocket-Accept' => $key,
+                'Sec-WebSocket-Version' => '13',
+            ];
+            if (isset($request->header['sec-websocket-protocol'])) {
+                $headers['Sec-WebSocket-Protocol'] = $request->header['sec-websocket-protocol'];
+            }
+            foreach ($headers as $key => $val) {
+                $response->header($key, $val);
+            }
+            $response->status(101);
+            $response->end();
+        });
     }
 
     public static function onRequest(Request $request, Response $response): bool
