@@ -35,13 +35,17 @@ class EasySwooleEvent implements Event
                 'type'=>Table::TYPE_STRING,
                 'size'=>32
             ],
-            'CALLBACK'=>[
+            'CALLBACK_URL'=>[
                 'type'=>Table::TYPE_STRING,
                 'size'=>128
             ],
             'CALLBACK_TIMEOUT'=>[
                 'type'=>Table::TYPE_FLOAT,
                 'size'=>4
+            ],
+            'CALLBACK_RETRY'=>[
+                'type'=>Table::TYPE_INT,
+                'size'=>1
             ]
         ]);
 
@@ -112,7 +116,7 @@ class EasySwooleEvent implements Event
                 "fd"=>$request->fd
             ]);
             $protocol->makeSignature($appConfig['APP_SECRET']);
-            $apiResponse = Proxy::sendCommand($protocol,$appConfig['CALLBACK'],$appConfig['CALLBACK_TIMEOUT']);
+            $apiResponse = Proxy::sendCommand($protocol,$appConfig['APP_ID']);
             if($apiResponse == null){
                 $response->status(502);
                 return;
