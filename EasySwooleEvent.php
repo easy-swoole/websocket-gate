@@ -46,8 +46,25 @@ class EasySwooleEvent implements Event
             'CALLBACK_RETRY'=>[
                 'type'=>Table::TYPE_INT,
                 'size'=>1
+            ],
+            'MAX_CONNECTION'=>[
+                'type'=>Table::TYPE_INT,
+                'size'=>8
+            ],
+            "CONNECTION_NUM"=>[
+                'type'=>Table::TYPE_INT,
+                'size'=>8
             ]
         ]);
+        $apps = Config::getInstance()->getConf('APPLICATIONS');
+        $maxConnection = 0;
+        foreach ($apps as $app){
+            TableManager::getInstance()->get('APPLICATIONS')->set($app['APP_ID'],$app);
+            TableManager::getInstance()->get('APPLICATIONS')->set($app['APP_ID'],[
+                'CONNECTION_NUM'=>0
+            ]);
+            $maxConnection += $app['MAX_CONNECTION'];
+        }
 
         TableManager::getInstance()->add('FD_LIST',[
             'APP_ID'=>[
@@ -58,19 +75,14 @@ class EasySwooleEvent implements Event
                 'type'=>Table::TYPE_STRING,
                 'size'=>16
             ],
-        ],Config::getInstance()->getConf('GATE_CONFIG.MAX_CONNECTION'));
+        ],$maxConnection);
 
         TableManager::getInstance()->add('UID_LIST',[
             'FD'=>[
                 'type'=>Table::TYPE_STRING,
                 'size'=>16
             ]
-        ],Config::getInstance()->getConf('GATE_CONFIG.MAX_CONNECTION'));
-
-        $apps = Config::getInstance()->getConf('APPLICATIONS');
-        foreach ($apps as $app){
-            TableManager::getInstance()->get('APPLICATIONS')->set($app['APP_ID'],$app);
-        }
+        ],$maxConnection);
 
         /*
          * 注册onMessage onHandShake onClose 回调
@@ -158,6 +170,9 @@ class EasySwooleEvent implements Event
             }
             $response->status(101);
             $response->end();
+            /*
+             * FD映射标记
+             */
             /*
              * 可能握手的时候就回复了信息
              */

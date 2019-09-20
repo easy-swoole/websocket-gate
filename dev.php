@@ -26,10 +26,8 @@ return [
             'APP_SECRET'=>'123456',
             'CALLBACK_URL'=>'http://127.0.0.1:9501/api/callback',
             'CALLBACK_TIMEOUT'=>3.0,
-            'CALLBACK_RETRY'=>3
+            'CALLBACK_RETRY'=>3,
+            'MAX_CONNECTION'=>5000//该应用的最大连接数
         ]
-    ],
-    "GATE_CONFIG"=>[
-        "MAX_CONNECTION"=>100000,//全部应用的连接总数
     ]
 ];
