@@ -19,5 +19,12 @@ return [
         ]
     ],
     'TEMP_DIR' => null,
-    'LOG_DIR' => null
+    'LOG_DIR' => null,
+    "APPLICATIONS"=>[
+        [
+            "APP_ID"=>"test",
+            'APP_SECRET'=>'123456',
+            'CALLBACK'=>'http://127.0.0.1:9501/api/callback'
+        ]
+    ]
 ];
