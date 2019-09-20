@@ -60,9 +60,8 @@ class EasySwooleEvent implements Event
             'FD'=>[
                 'type'=>Table::TYPE_STRING,
                 'size'=>16
-            ],
+            ]
         ],Config::getInstance()->getConf('GATE_CONFIG.MAX_CONNECTION'));
-
 
         $apps = Config::getInstance()->getConf('APPLICATIONS');
         foreach ($apps as $app){
@@ -70,11 +69,22 @@ class EasySwooleEvent implements Event
         }
 
         /*
-         * 注册onMessage onHandShake 回调
+         * 注册onMessage onHandShake onClose 回调
          */
-
         $register->set($register::onMessage,function (Server $server, Frame $frame){
+            $info = TableManager::getInstance()->get('FD_LIST')->get($frame->fd);
+            /*
+             * 推送消息回去应用callback url
+             */
+        });
 
+        $register->set($register::onClose,function (Server $server, int $fd, int $reactorId){
+            $info = TableManager::getInstance()->get('FD_LIST')->get($fd);
+            if($info){
+                TableManager::getInstance()->get('FD_LIST')->del($fd);
+                TableManager::getInstance()->get('UID_LIST')->del($info['APP_ID'].$info['UID']);
+                //推送对应的消息给应用回调URL
+            }
         });
 
         $register->set($register::onHandShake,function (\Swoole\Http\Request $request,\Swoole\Http\Response $response){
