@@ -24,7 +24,8 @@ return [
         [
             "APP_ID"=>"test",
             'APP_SECRET'=>'123456',
-            'CALLBACK'=>'http://127.0.0.1:9501/api/callback'
+            'CALLBACK'=>'http://127.0.0.1:9501/api/callback',
+            'CALLBACK_TIMEOUT'=>3.0
         ]
     ]
 ];

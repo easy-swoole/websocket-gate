@@ -25,10 +25,7 @@ class Signature extends SplBean
 
     function makeSignature(string $key):string
     {
-        $data = $this->toArray();
-        unset($data['signature']);
-        ksort($data);
-        $this->signature = md5(implode($data).$this->signatureTime.$key);
+        $this->signature = $this->generateSignature($key);
         return $this->signature;
     }
 
@@ -37,10 +34,7 @@ class Signature extends SplBean
         if(time() - $this->signatureTime > $ttl){
             return false;
         }
-        $data = $this->toArray();
-        unset($data['signature']);
-        ksort($data);
-        return $this->signature === md5(implode($data).$this->signatureTime.$key);
+        return $this->signature === $this->generateSignature($key);
     }
 
     /**
@@ -59,4 +53,12 @@ class Signature extends SplBean
         return $this->signatureTime;
     }
 
+
+    private function generateSignature(string $key):string
+    {
+        $data = $this->toArray();
+        unset($data['signature']);
+        ksort($data);
+        return md5(json_encode($data,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).$this->signatureTime.$key);
+    }
 }

@@ -2,6 +2,8 @@
 namespace EasySwoole\EasySwoole;
 
 
+use App\Beans\Protocol;
+use App\Utility\Proxy;
 use EasySwoole\Component\TableManager;
 use EasySwoole\EasySwoole\Swoole\EventRegister;
 use EasySwoole\EasySwoole\AbstractInterface\Event;
@@ -16,7 +18,6 @@ class EasySwooleEvent implements Event
 
     public static function initialize()
     {
-        // TODO: Implement initialize() method.
         date_default_timezone_set('Asia/Shanghai');
     }
 
@@ -38,6 +39,10 @@ class EasySwooleEvent implements Event
                 'type'=>Table::TYPE_STRING,
                 'size'=>128
             ],
+            'CALLBACK_TIMEOUT'=>[
+                'type'=>Table::TYPE_FLOAT,
+                'size'=>4
+            ]
         ]);
         $apps = Config::getInstance()->getConf('APPLICATIONS');
         foreach ($apps as $app){
@@ -53,12 +58,43 @@ class EasySwooleEvent implements Event
         });
 
         $register->set($register::onHandShake,function (\Swoole\Http\Request $request,\Swoole\Http\Response $response){
+            $msg = null;
             /*
              * 应用鉴权
              */
-
+            if(!isset($request->get['APP_ID'])){
+                $response->status(400);
+                $response->end('APP_ID is require');
+                return;
+            }
+            $appConfig = TableManager::getInstance()->get('APPLICATIONS')->get($request->get['APP_ID']);
+            if(!$appConfig){
+                $response->status(400);
+                $response->end('APP_ID not exist');
+                return;
+            }
+            $data = $request->get;
+            unset($data['APP_ID']);
+            $protocol = new Protocol([
+                'opCode'=>Protocol::OP_CONNECT,
+                "APP_ID"=>$request->get['APP_ID'],
+                "data"=>$data,
+                "fd"=>$request->fd
+            ]);
+            $protocol->makeSignature($appConfig['APP_SECRET']);
+            $apiResponse = Proxy::sendCommand($protocol,$appConfig['CALLBACK'],$appConfig['CALLBACK_TIMEOUT']);
+            if($apiResponse == null){
+                $response->status(502);
+                return;
+            }
+            $msg = $apiResponse->getData();
+            if($apiResponse->getStatus() === Protocol::STATUS_ERROR) {
+                $response->status(400);
+                $response->end($msg);
+                return;
+            }
             /*
-             * 一下信息为RFC规定握手流程
+             * 以下信息为RFC规定握手流程
              */
             if(!isset($request->header['sec-websocket-key'])){
                 $response->end('sec-websocket-key error');
@@ -88,17 +124,22 @@ class EasySwooleEvent implements Event
             }
             $response->status(101);
             $response->end();
+            /*
+             * 可能握手的时候就回复了信息
+             */
+            if(!empty($msg)){
+                ServerManager::getInstance()->getSwooleServer()->push($request->fd,$apiResponse->getData());
+            }
         });
     }
 
     public static function onRequest(Request $request, Response $response): bool
     {
-        // TODO: Implement onRequest() method.
         return true;
     }
 
     public static function afterRequest(Request $request, Response $response): void
     {
-        // TODO: Implement afterAction() method.
+
     }
 }
