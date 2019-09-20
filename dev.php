@@ -27,5 +27,8 @@ return [
             'CALLBACK'=>'http://127.0.0.1:9501/api/callback',
             'CALLBACK_TIMEOUT'=>3.0
         ]
+    ],
+    "GATE_CONFIG"=>[
+        "MAX_CONNECTION"=>100000,//全部应用的连接总数
     ]
 ];

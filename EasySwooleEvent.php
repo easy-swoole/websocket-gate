@@ -44,6 +44,26 @@ class EasySwooleEvent implements Event
                 'size'=>4
             ]
         ]);
+
+        TableManager::getInstance()->add('FD_LIST',[
+            'APP_ID'=>[
+                'type'=>Table::TYPE_STRING,
+                'size'=>16
+            ],
+            'UID'=>[
+                'type'=>Table::TYPE_STRING,
+                'size'=>16
+            ],
+        ],Config::getInstance()->getConf('GATE_CONFIG.MAX_CONNECTION'));
+
+        TableManager::getInstance()->add('UID_LIST',[
+            'FD'=>[
+                'type'=>Table::TYPE_STRING,
+                'size'=>16
+            ],
+        ],Config::getInstance()->getConf('GATE_CONFIG.MAX_CONNECTION'));
+
+
         $apps = Config::getInstance()->getConf('APPLICATIONS');
         foreach ($apps as $app){
             TableManager::getInstance()->get('APPLICATIONS')->set($app['APP_ID'],$app);
